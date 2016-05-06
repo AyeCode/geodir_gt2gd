@@ -1,0 +1,128 @@
+/* gt2gd style */
+div.gt2gd-wrap {
+}
+#wpbody-content .gt2gd-wrap .metabox-holder {
+    padding-top: 15px;
+}
+.gt2gd-wrap .gt2gd-col {
+	width: 49.5%;
+}
+.gt2gd-cols .meta-box-sortables {
+    margin: 0 8px;
+    min-height: 100px;
+}
+.gt2gd-cols  .gt2gd-col-1 .meta-box-sortables {
+	margin-left: 0;
+}
+.gt2gd-cols  .gt2gd-col-2 .meta-box-sortables {
+	margin-right: 0;
+}
+.gt2gd-wrap .gt2gd-col-inner {
+	margin: 0 8px;
+    min-height: 100px;
+}
+.gt2gd-wrap .gt2gd-col-1 {
+	float: left:
+}
+.gt2gd-wrap .gt2gd-col-1 h4{
+	margin: 10px 15px;
+}
+.gt2gd-wrap .gt2gd-col-1 h4 font {
+	font-weight: normal;
+}
+.gt2gd-wrap .gt2gd-col-2 {
+	width: 50.5%;
+	float: right:
+}
+.gt2gd-wrap .inside .main {
+    padding: 0 12px 11px;
+}
+.gt2gd-wrap .postbox .inside {
+    margin-bottom: 0;
+}
+.gt2gd-wrap  .gt2gd-col .inside {
+   padding-left: 0;
+   padding-right: 0;
+   padding-bottom: 0;
+   margin-top: 0;
+}
+.gt2gd-wrap .postbox .hndle {
+	line-height: 1.4em;
+}
+.gt2gd-reqs h4 {
+	margin: 0;
+}
+.gt2gd-wrap .postbox .gt2gd-widget {
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+    padding: 8px 15px 10px;
+}
+.gt2gd-wrap .postbox .gt2gd-widget li {
+	padding-left: 15px;
+}
+.gt2gd-wrap ul.gt2gd-steps {
+	margin: 0;
+}
+.gt2gd-wrap ul.gt2gd-steps li {
+	margin: 0;
+	line-height: 2.25em;
+	padding: 2px 17px;
+}
+.gt2gd-wrap ul.gt2gd-steps li {
+	position: relative;
+}
+.gt2gd-wrap ul.gt2gd-steps li.gt2gd-hstatus {
+	font-weight: bold;
+	border-bottom: solid 1px #eee;
+}
+.gt2gd-wrap ul.gt2gd-steps li .gt2gd-status {
+	position: absolute;
+	right: 0;
+	top: 0;
+	min-width: 100px;
+	height: 100%;
+}
+.gt2gd-steps li.gt2gd-sdone .gt2gd-status {
+	color: green;
+}
+.gt2gd-steps li.gt2gd-sfail .gt2gd-status {
+	color: red;
+}
+.gt2gd-steps li.gt2gd-sna .gt2gd-status {
+	color: gray;
+}
+.gt2gd-steps li.gt2gd-swait .gt2gd-status {
+	color: #0073aa;
+}
+.gt2gd-wrap h3.gt2gd-actions  {
+	padding: 14px 15px;
+	border-bottom: none;
+	border-top: solid 1px #eee;
+	font-weight: normal;
+}
+.gt2gd-warning {
+	color: red;
+}
+.gt2gd-steps li.gt2gd-swait {
+	background-position: center center;
+	background-repeat: no-repeat;
+	background-image: url(../images/ajax-loader.gif);
+	background-color: #E6F1F6;
+}
+.gt2gd-wrap span.gt2gd-fmsg {
+	color: green;
+	font-size: 13px;
+}
+#gt2gd_notice_msg {
+	background-color: red;
+	color: white;
+	margin: 20px 0 15px 0;
+	font-weight: 600;
+}
+font.gt2gd-found, font.gt2gd-not-found  {
+	color: green;
+	display: inline-block;
+	font-family: sans-serif;
+	font-size: 80%;
+	text-indent: 5px;
+}

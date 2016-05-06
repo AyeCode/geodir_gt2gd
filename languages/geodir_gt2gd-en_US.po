@@ -1,0 +1,197 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: GeoTheme To GeoDirectory 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-09-17 18:55+0530\n"
+"PO-Revision-Date: 2015-09-17 18:55+0530\n"
+"Last-Translator: \n"
+"Language-Team: GeoDirectory <info@wpgeodirectory.com>\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-KeywordsList: _;gettext;gettext_noop;__;_e;_n:1,2;_n_noop:1,2;"
+"_nx:1,2;_x;_ex\n"
+"X-Poedit-Basepath: ../\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Generator: Poedit 1.5.4\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: includes/geodir_gt2gd_functions.php:86
+msgid ""
+"Are you sure you want to start GeoTheme To GeoDirectory conversion? It CAN "
+"NOT BE UNDONE so we recommands to take full backup before starting "
+"conversion."
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:87
+msgid "No item remain for GeoTheme to GeoDirectory conversion!"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:88
+msgid ""
+"That's it! GeoTheme To GeoDirectory conversion has been completed. You can "
+"enjoy with GeoDirectory after disabling GeoTheme :)"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:89
+msgid "Converting..."
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:114
+msgid ""
+"<strong>Warning:</strong> GeoTheme To GeoDirectory conversion can not be "
+"undone, so please take backup before start conversion."
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:128
+msgid "Places"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:130
+msgid "Events"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:135
+msgid "- Found"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:136
+msgid "- Not Found"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:139
+msgid "GeoTheme To GeoDirectory Conversion"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:144
+msgid "Convert GeoTheme To GeoDirectory"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:146
+msgid "Post Types:"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:148
+msgid "Item"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:148
+msgid "Status"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:158
+msgid ""
+"<strong>Info:</strong> It seems GeoTheme to GeoDirectory conversion was "
+"finished or there is no item found for GeoTheme to GeoDirectory conversion."
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:167
+msgid "About GeoTheme To GeoDirectory Conversion"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:170
+msgid "Requirements:"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:172
+msgid "- GeoTheme must be installed & should be disabled."
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:173
+msgid "- Fresh installation of GeoDirectory plugin."
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:179
+msgid "Recommanded plugins installed/active on site for better conversion:"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:181
+msgid "- GeoDirectory Events"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:182
+msgid "- GeoDirectory Location Manager"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:183
+msgid "- GeoDirectory Payment Manager"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:184
+msgid "- GeoDirectory Review Rating Manager"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:185
+msgid "- GeoDirectory Claim Listing"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:191
+msgid ""
+"<b>Info:</b> To start GeoTheme To GeoDirectory conversion, first disable "
+"GeoTheme and install & enable GeoDirectory and its addons."
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:213
+msgid "Locations"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:214
+msgid "Prices"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:215
+msgid "Categories"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:216
+msgid "Tags"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:217
+msgid "Listings"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:218
+msgid "Reviews & Ratings"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:219
+msgid "Invoices"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:220
+msgid "Claim Listings"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:226
+#: includes/geodir_gt2gd_functions.php:231
+#: includes/geodir_gt2gd_functions.php:233
+#: includes/geodir_gt2gd_functions.php:238
+msgid "n/a"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:244
+#: includes/geodir_gt2gd_functions.php:453
+msgid "Done"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:392
+#, php-format
+msgid "Requested item \"%s\" not supported!"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:394
+#: includes/geodir_gt2gd_functions.php:412
+msgid "Fail"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:604
+msgid "unlimited"
+msgstr ""
+
+#: includes/geodir_gt2gd_functions.php:607
+#, php-format
+msgid "%s : number of publish days are %s (<span id=\"%s\">%s</span>)"
+msgstr ""
