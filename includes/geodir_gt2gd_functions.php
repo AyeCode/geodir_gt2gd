@@ -356,7 +356,7 @@ function geodir_gt2gd_ajax() {
     // try to set higher limits for export
     @ini_set('max_input_time', 3000);
     @ini_set('max_execution_time', 3000);
-    @ini_set('memory_limit', '256M');
+    @ini_set('memory_limit', '512M');
     error_reporting(E_ALL);
 
     $json = array();
@@ -644,7 +644,7 @@ function geodir_gt2gd_convert_prices() {
             $price['cat_limit'] = $row['cat_limit'];
             $price['post_type'] = geodir_gt2gd_gd_post_type( $post_type );
             $price['link_business_pkg'] = $row['link_business_pkg'];
-            $price['recurring_pkg'] = ( $post_type == 'event' || $post_type == 'gd_event' ) ? 1 : 0;
+            $price['recurring_pkg'] = ($row['recurring_pkg']) ? '0' : '1';//( $post_type == 'event' || $post_type == 'gd_event' ) ? 1 : 0;
             $price['reg_desc_pkg'] = $row['reg_desc_pkg'];
             $price['reg_fees_pkg'] = $row['reg_fees_pkg'];
             $price['downgrade_pkg'] = $row['downgrade_pkg'];
@@ -917,7 +917,7 @@ function geodir_gt2gd_convert_listings() {
                 $data['post_location_id'] = $post_location_id;
                 $data['marker_json'] = $marker_json;
                 $data['claimed'] = get_post_meta($post_id, 'claimed', true);
-                $data['businesses'] = get_post_meta($post_id, 'a_businesses', true);
+
                 $data['is_featured'] = isset( $row['is_featured'] ) && $row['is_featured'] !== '' ? $row['is_featured'] : get_post_meta($post_id, 'is_featured', true);
                 $data['featured_image'] = $featured_image;
                 $data['paid_amount'] = get_post_meta($post_id, 'paid_amount', true);
@@ -935,7 +935,7 @@ function geodir_gt2gd_convert_listings() {
                     $data['is_recurring'] = $recurring_data['is_recurring'];
                     $data['recurring_dates'] = $recurring_dates;
                     $data['event_reg_desc'] = !empty($row['reg_desc']) ? trim($row['reg_desc']) : get_post_meta($post_id, 'reg_desc', true);
-                    $data['event_reg_fees'] = !empty($row['reg_fees']) ? trim($row['reg_fees']) : get_post_meta($post_id, 'reg_fees', true);
+                    $data['geodir_link_business'] = isset( $row['a_businesses'] ) ? $row['a_businesses']  :'';
                 }
                 $data['submit_time'] = strtotime( $row['post_date'] );
                 $data['post_locations'] = $post_locations;
