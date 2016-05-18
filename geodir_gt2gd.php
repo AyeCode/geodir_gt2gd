@@ -10,7 +10,7 @@
 Plugin Name: GeoTheme To GeoDirectory
 Plugin URI: http://wpgeodirectory.com/
 Description: GeoTheme To GeoDirectory plugin provides tool to convert GeoTheme directory listings in to GeoDirectory directory listings.
-Version: 1.0.0
+Version: 1.0.1
 Author: GeoDirectory
 Author URI: http://wpgeodirectory.com/
 License: GPLv3
@@ -22,7 +22,7 @@ if ( !defined( 'WPINC' ) ) {
 }
 
 // Define constants.
-define( 'GT2GD_VERSION', '1.0.0' );
+define( 'GT2GD_VERSION', '1.0.1' );
 define( 'GT2GD_PLUGIN_DIR', WP_PLUGIN_DIR . '/' . plugin_basename( dirname( __FILE__ ) ) );
 define( 'GT2GD_PLUGIN_URL', WP_PLUGIN_URL . '/' . plugin_basename( dirname( __FILE__ ) ) );
 

@@ -1,3 +1,7 @@
+v1.0.1
+Link business to event saving to wrong DB columb - FIXED
+Price package allow linking events aves wrong value - FIXED
+
 v1.0.0
 Initial release.
 
