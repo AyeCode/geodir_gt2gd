@@ -820,7 +820,7 @@ function geodir_gt2gd_convert_listings() {
         $custom_fields = geodir_gt2gd_convert_custom_fields( $gd_post_type );
         
         $table = $gt_post_type == 'event' ? $wpdb->prefix . 'gt_event_detail' : $wpdb->prefix . 'gt_place_detail';
-        
+
         $sql = "SELECT pd.*, p.ID, p.post_status, p.post_date FROM " . $wpdb->posts . " AS p LEFT JOIN " . $table . " as pd ON pd.post_id = p.ID WHERE p.post_type = '" . $gt_post_type . "' ORDER BY p.ID ASC";
         $gt_rows = $wpdb->get_results($sql, ARRAY_A);
 
@@ -1521,6 +1521,7 @@ function geodir_gt2gd_convert_custom_fields( $gd_post_type ) {
             switch ( $gt_field_type ) {
                 case 'checkbox':
                     $field_data_type = "TINYINT( 1 ) NOT NULL";
+                    if(isset($save_field['default_value']) && strlen($save_field['default_value'])>1){$save_field['default_value'] = 0;}
                 break;
                 case 'multiselect':
                     $field_data_type = "VARCHAR( 500 ) NULL";
