@@ -79,10 +79,16 @@ function geodir_gt2gd_admin_init() {
  * @since 1.0.0
  */
 function geodir_gt2gd_enqueue_scripts() {
+    wp_register_style( 'gt2gd-progessbar-style', GT2GD_PLUGIN_URL . '/assets/css/bootstrap-progressbar.min.css', array(), '3.3.4' );
+    wp_enqueue_style( 'gt2gd-progessbar-style' );
+    
     // Register and enqueue the style.
     wp_register_style( 'gt2gd-style', GT2GD_PLUGIN_URL . '/assets/css/style.css', array(), GT2GD_VERSION );
     wp_enqueue_style( 'gt2gd-style' );
-        
+    
+    wp_register_script( 'gt2gd-progessbar-script', GT2GD_PLUGIN_URL . '/assets/js/bootstrap-progressbar.min.js', array('jquery'), '3.3.4' );
+    wp_enqueue_script( 'gt2gd-progessbar-script' );
+    
     // Register the script.
     wp_register_script( 'gt2gd-script', GT2GD_PLUGIN_URL . '/assets/js/script.js', array(), GT2GD_VERSION );
 
@@ -155,8 +161,11 @@ function geodir_gt2gd_dashboard() {
                             <h4><?php _e( 'Post Types:', 'geodir_gt2gd' );?> <font class="gt2gd-ptypes"><?php echo $gd_post_types;?></font></h4>
                             <ul class="gt2gd-steps">
                                 <li class="gt2gd-hstatus"><?php _e( 'Item', 'geodir_gt2gd' );?><span class="gt2gd-status"><?php _e( 'Status', 'geodir_gt2gd' );?></span></li>
-                                <?php foreach ( $items as $id => $item ) { ?>
-                                <li id="gt2gd-<?php echo $id;?>" class="gt2gd-s<?php echo $item['status'];?>"><?php echo $item['title'];?><span class="gt2gd-status"><?php echo $item['status_title'];?></span></li>
+                                <?php foreach ( $items as $id => $item ) { $class = !empty($item['progress']) ? ' gt2gd-progress' : ''; ?>
+                                <li id="gt2gd-<?php echo $id;?>" class="gt2gd-s<?php echo $item['status'] . $class;?>"><?php echo $item['title'];?><span class="gt2gd-status"><?php echo $item['status_title'];?></span>
+                                <?php if (!empty($item['progress']) && !empty($item['total'])) { ?><div class="progress progress-striped"><div class="progress-bar progress-bar-success active" role="progressbar" data-transitiongoal="0" aria-valuemin="0" aria-valuemax="<?php echo (int)$item['total'];?>"></div></div>
+                                <?php } ?>
+                                </li>
                                 <?php } ?>
                             </ul>
                         </div>
@@ -218,12 +227,14 @@ function geodir_gt2gd_dashboard() {
  * @return null|array Items array.
  */
 function geodir_gt2gd_conversion_items( $convertable = true, $single = false ) {
+    $listings = geodir_gt2gd_count_total_listings();
+    
     $items = array();
     $items['locations'] = array( 'id' => 'locations', 'title' => __( 'Locations', 'geodir_gt2gd' ), 'status' => 'start', 'status_title' => '...' );
     $items['prices'] = array( 'id' => 'prices', 'title' => __( 'Prices', 'geodir_gt2gd' ), 'status' => 'start', 'status_title' => '...' );
     $items['categories'] = array( 'id' => 'categories', 'title' => __( 'Categories', 'geodir_gt2gd' ), 'status' => 'start', 'status_title' => '...' );
     $items['tags'] = array( 'id' => 'tags', 'title' => __( 'Tags', 'geodir_gt2gd' ), 'status' => 'start', 'status_title' => '...' );
-    $items['listings'] = array( 'id' => 'listings', 'title' => __( 'Listings', 'geodir_gt2gd' ), 'status' => 'start', 'status_title' => '...' );
+    $items['listings'] = array( 'id' => 'listings', 'title' => __( 'Listings', 'geodir_gt2gd' ), 'status' => 'start', 'status_title' => '...', 'progress' => true, 'total' => $listings );
     $items['reviews'] = array( 'id' => 'reviews', 'title' => __( 'Reviews & Ratings', 'geodir_gt2gd' ), 'status' => 'start', 'status_title' => '...' );
     $items['invoices'] = array( 'id' => 'invoices', 'title' => __( 'Invoices', 'geodir_gt2gd' ), 'status' => 'start', 'status_title' => '...' );
     $items['claims'] = array( 'id' => 'claims', 'title' => __( 'Claim Listings', 'geodir_gt2gd' ), 'status' => 'start', 'status_title' => '...' );
@@ -351,13 +362,15 @@ function geodir_gt2gd_gt_installed( $installed ) {
  * @return string Json data.
  */
 function geodir_gt2gd_ajax() {
-    global $wpdb, $wp_filesystem;
-
+    global $wpdb, $wp_filesystem, $gd_session;
+    
     // try to set higher limits for export
-    @ini_set('max_input_time', 3000);
-    @ini_set('max_execution_time', 3000);
+    @set_time_limit(0);
+    @ini_set('max_input_time', 0);
+    @ini_set('max_execution_time', 0);
+    @ini_set('max_execution_time', 0);
     @ini_set('memory_limit', '512M');
-    error_reporting(E_ALL);
+    error_reporting(0);
 
     $json = array();
 
@@ -365,16 +378,20 @@ function geodir_gt2gd_ajax() {
         wp_send_json( $json );
         exit;
     }
-
+    
     $task = isset( $_REQUEST['task'] ) ? $_REQUEST['task'] : NULL;
     $nonce = isset( $_REQUEST['_nonce'] ) ? $_REQUEST['_nonce'] : NULL;
     $item = isset( $_REQUEST['_item'] ) ? $_REQUEST['_item'] : NULL;
+    $first = !empty( $_REQUEST['_f'] ) ? true : false;
+    if ($first) {
+        $gd_session->set('start', microtime(true));
+    }
 
     if ( !wp_verify_nonce( $nonce, 'geodir_gt2gd_nonce' ) ) {
         wp_send_json( $json );
         exit;
     }
-        
+
     $items = geodir_gt2gd_conversion_items();
     if ( !isset($items[$item]) ) {
         wp_send_json( $json );
@@ -389,19 +406,29 @@ function geodir_gt2gd_ajax() {
 
     if ( !empty( $next_item ) ) {
         $convert_status = geodir_gt2gd_convert_item( $item );
+        
         if ( $convert_status['status'] == 'done' ) {
             update_option( 'geodir_gt2gd_done_' . $item, 1 );
         }
         
         $json['status'] = $convert_status['status'];
         $json['status_txt'] = $convert_status['status_txt'];
+        if (!empty($convert_status['done'])) {
+            $json['done'] = $convert_status['done'];
+        }
         
-        if ( $next_item['id'] != $item ) {
+        if (!empty($convert_status['batch'])) {
+            $json['next'] = $item;
+        } else if ( $next_item['id'] != $item ) {
             $json['next'] = $next_item['id'];
         } else {
             $json['next'] = 'done';
+            $json['timet'] = round(microtime(true) - $gd_session->get('start'), 3);
+            geodir_error_log('Total Time: ' . $json['timet'] . ' sec');
         }
-
+        
+        $json['time'] = isset($convert_status['time']) ? $convert_status['time'] : 0;
+        $json['time'] = max($json['time'], 0.001);
     } else {
         $json['error'] = wp_sprintf( __( 'Requested item "%s" not supported!', 'geodir_gt2gd' ), $item );
         $json['status'] = 'fail';
@@ -421,9 +448,13 @@ function geodir_gt2gd_ajax() {
  * @return array Status of item conversion.
  */
 function geodir_gt2gd_convert_item( $item ) {
+    global $gd_session;
+    $limit = rand(100, 300); // set limit here
+    
     $status = array();
     $status['status'] = 'fail';
     $status['status_txt'] = __( 'Fail', 'geodir_gt2gd' );
+    $start =  microtime(true);
 
     $return = false;
 
@@ -445,7 +476,32 @@ function geodir_gt2gd_convert_item( $item ) {
         }
         break;
         case 'listings': {
-            $return = geodir_gt2gd_convert_listings();
+            if (($listings = (int)geodir_gt2gd_count_listings('place')) > 0) {
+                $return = geodir_gt2gd_convert_batch_listings('place', $limit);
+                $status['done'] = $return;
+                
+                if (($listings - $return) > 0) {
+                    $status['batch'] = $listings - $return;
+                    return $status;
+                } else if (geodir_gt2gd_is_active('geodir_event_manager') && ($listings = (int)geodir_gt2gd_count_listings('event')) > 0) {
+                    $status['batch'] = $listings;
+                    return $status;
+                } else {
+                    $return = true;
+                }
+            } else if (geodir_gt2gd_is_active('geodir_event_manager') && ($listings = (int)geodir_gt2gd_count_listings('event')) > 0) {
+                $return = geodir_gt2gd_convert_batch_listings('event', $limit);
+                $status['done'] = $return;
+                
+                if (($listings - $return) > 0) {
+                    $status['batch'] = ($listings - $return);
+                    return $status;
+                } else {
+                    $return = true;
+                }
+            } else {
+                $return = true;
+            }
         }
         break;
         case 'reviews': {
@@ -465,6 +521,8 @@ function geodir_gt2gd_convert_item( $item ) {
     if ( $return ) {
         $status['status'] = 'done';
         $status['status_txt'] = __( 'Done', 'geodir_gt2gd' );
+        $status['time'] = round(microtime(true) - $start, 3);
+        geodir_error_log('Convert ' . $item . ': ' . $status['time'] . ' sec');
     }
 
     return $status;
@@ -795,264 +853,270 @@ function geodir_gt2gd_convert_tags() {
 /**
  * GeoTheme to GeoDirectory listings conversion.
  *
- * @since 1.0.0
+ * @since 1.0.2
  *
  * @global object $wpdb WordPress Database object.
  *
  * @return bool Conversion status.
  */
-function geodir_gt2gd_convert_listings() {
-    global $wpdb;
+function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
+    global $wpdb, $gt2gd_locations;
 
-    $is_event_active = geodir_gt2gd_is_active('geodir_event_manager');
     $is_location_active = geodir_gt2gd_is_active('geodir_location_manager');
     $is_payment_active = geodir_gt2gd_is_active('geodir_payment_manager');
-
-    $gt_post_types = array( 'place' );
-    if ( $is_event_active ) {
-        $gt_post_types[] = 'event';
-    }
+    
+    $gd_default_location = (array)geodir_get_default_location();
+    $default_marker_icon = get_option('geodir_default_marker_icon');
+    
+    $gt2gd_locations = array();
 
     // GT => GD custom fields
-    foreach ( $gt_post_types as $gt_post_type ) {
-        $gd_post_type = geodir_gt2gd_gd_post_type($gt_post_type);
-        
-        $custom_fields = geodir_gt2gd_convert_custom_fields( $gd_post_type );
-        
-        $table = $gt_post_type == 'event' ? $wpdb->prefix . 'gt_event_detail' : $wpdb->prefix . 'gt_place_detail';
+    $gd_post_type = geodir_gt2gd_gd_post_type($gt_post_type);
+    $custom_fields = geodir_gt2gd_convert_custom_fields( $gd_post_type );
+    
+    $gt_rows = geodir_gt2gd_get_listings($gt_post_type, $limit);
 
-        $sql = "SELECT pd.*, p.ID, p.post_status, p.post_date FROM " . $wpdb->posts . " AS p LEFT JOIN " . $table . " as pd ON pd.post_id = p.ID WHERE p.post_type = '" . $gt_post_type . "' ORDER BY p.ID ASC";
-        $gt_rows = $wpdb->get_results($sql, ARRAY_A);
+    $taxonomy_category = $gd_post_type . 'category';
+    $taxonomy_tags = $gd_post_type . '_tags';
+    
+    $done = 0;
+    if (!empty($gt_rows)) {
+        foreach ($gt_rows as $key => $row) {
+            $done++;
+            
+            $row = (array)$row;
+            $post_id = (int)$row['ID'];
+            $row['post_id'] = $post_id;
 
-        $taxonomy_category = $gd_post_type . 'category';
-        $taxonomy_tags = $gd_post_type . '_tags';
-        
-        $gd_default_location = (array)geodir_get_default_location();
-        
-        if (!empty($gt_rows)) {
-            foreach ($gt_rows as $row) {
-                $post_id = $row['ID'];
-                $row['post_id'] = $post_id;
-
-                $sql = "SELECT t.term_id, t.name, t.slug, tt.taxonomy FROM " . $wpdb->terms . " AS t INNER JOIN " . $wpdb->term_taxonomy . " AS tt ON tt.term_id = t.term_id INNER JOIN " . $wpdb->term_relationships . " AS tr ON tr.term_taxonomy_id = tt.term_taxonomy_id WHERE ( tt.taxonomy = '" . $taxonomy_category . "' OR tt.taxonomy = '" . $taxonomy_tags . "' ) AND tr.object_id = '" . $post_id . "' ORDER BY tr.term_order, tr.term_taxonomy_id, t.name ASC";
-                $terms = $wpdb->get_results($sql, ARRAY_A);
-                
-                $default_category = 0;
-                $post_category = '';
-                $post_tags = '';
-                $post_tags = '';
-                
-                if ( !empty( $terms ) ) {
-                    $category_terms = array();
-                    $post_tags = array();
-                
-                    foreach ($terms as $term) {
-                        if ($term['taxonomy'] == $taxonomy_category) {
-                            $category_terms[] = $term['term_id'];
-                        }
-                        
-                        if ($term['taxonomy'] == $taxonomy_tags) {
-                            $post_tags[] = $term['name'];
-                        }
+            $sql = "SELECT t.term_id, t.name, t.slug, tt.taxonomy FROM " . $wpdb->terms . " AS t INNER JOIN " . $wpdb->term_taxonomy . " AS tt ON tt.term_id = t.term_id INNER JOIN " . $wpdb->term_relationships . " AS tr ON tr.term_taxonomy_id = tt.term_taxonomy_id WHERE ( tt.taxonomy = '" . $taxonomy_category . "' OR tt.taxonomy = '" . $taxonomy_tags . "' ) AND tr.object_id = '" . $post_id . "' ORDER BY tr.term_order, tr.term_taxonomy_id, t.name ASC";
+            $terms = $wpdb->get_results($sql);
+            $wpdb->flush();
+            
+            $default_category = 0;
+            $post_category = '';
+            $post_tags = '';
+            $post_tags = '';
+            
+            if ( !empty( $terms ) ) {
+                $category_terms = array();
+                $post_tags = array();
+            
+                foreach ($terms as $term) {
+                   $term = (array)$term;
+                   if ($term['taxonomy'] == $taxonomy_category) {
+                        $category_terms[] = $term['term_id'];
                     }
                     
-                    if (!empty($category_terms)) {
-                        $post_category = ',' . implode(',', $category_terms) . ',';
-                        $default_category = $category_terms[0];
+                    if ($term['taxonomy'] == $taxonomy_tags) {
+                        $post_tags[] = $term['name'];
                     }
-                    
-                    $post_tags = !empty( $post_tags ) ? implode( ',', $post_tags ) : '';
                 }
                 
-                $row['post_city_id'] = !empty($row['post_city_id']) ? trim($row['post_city_id']) : get_post_meta($post_id, 'post_city_id', true);
-                $row['address'] = !empty($row['address']) ? $row['address'] : get_post_meta($post_id, 'address', true);
-                $row['geo_latitude'] = !empty($row['geo_latitude']) ? $row['geo_latitude'] : get_post_meta($post_id, 'geo_latitude', true);
-                $row['geo_longitude'] = !empty($row['geo_longitude']) ? $row['geo_longitude'] : get_post_meta($post_id, 'geo_longitude', true);
-                $row['featured_image'] = isset($row['featured_image']) ? $row['featured_image'] : '';
-                $row['image_ids'] = isset($row['image_ids']) ? $row['image_ids'] : '';
-                
-                $post_zip = $row['address'] != '' ? geodir_gt2gd_extract_zipcode( $row['address'], true ) : '';
-                
-                $marker_json = '';
-                if ( $default_category > 0 ) {
-                    $term_icon_url = get_tax_meta($default_category, 'ct_cat_icon', false, $gd_post_type);
-                    $term_icon = (isset($term_icon_url['src']) && $term_icon_url['src'] != '') ? $term_icon_url['src'] : get_option('geodir_default_marker_icon');
-                    
-                    $marker_json = '{';
-                    $marker_json .= '"id":"' . $post_id . '",';
-                    $marker_json .= '"lat_pos": "' . $row['geo_latitude'] . '",';
-                    $marker_json .= '"long_pos": "' . $row['geo_longitude'] . '",';
-                    $marker_json .= '"marker_id":"' . $post_id . '_' . $default_category . '",';
-                    $marker_json .= '"icon":"' . $term_icon . '",';
-                    $marker_json .= '"group":"catgroup' . $default_category . '"';
-                    $marker_json .= '}';
+                if (!empty($category_terms)) {
+                    $post_category = ',' . implode(',', $category_terms) . ',';
+                    $default_category = $category_terms[0];
                 }
                 
-                $post_images = geodir_gt2gd_gt_parse_attachments($row['featured_image'], $row['image_ids']);
-                $featured_image = !empty($post_images) && !empty($post_images[0]['file']) ? '/' . ltrim($post_images[0]['file'], "/") : '';
+                $post_tags = !empty( $post_tags ) ? implode( ',', $post_tags ) : '';
+            }
+            
+            $row['post_city_id'] = !empty($row['post_city_id']) ? trim($row['post_city_id']) : get_post_meta($post_id, 'post_city_id', true);
+            $row['address'] = !empty($row['address']) ? $row['address'] : get_post_meta($post_id, 'address', true);
+            $row['geo_latitude'] = !empty($row['geo_latitude']) ? $row['geo_latitude'] : get_post_meta($post_id, 'geo_latitude', true);
+            $row['geo_longitude'] = !empty($row['geo_longitude']) ? $row['geo_longitude'] : get_post_meta($post_id, 'geo_longitude', true);
+            $row['featured_image'] = isset($row['featured_image']) ? $row['featured_image'] : '';
+            $row['image_ids'] = isset($row['image_ids']) ? $row['image_ids'] : '';
+            
+            $post_zip = $row['address'] != '' ? geodir_gt2gd_extract_zipcode( $row['address'], true ) : '';
+            
+            $marker_json = '';
+            if ( $default_category > 0 ) {
+                $term_icon_url = get_tax_meta($default_category, 'ct_cat_icon', false, $gd_post_type);
+                $term_icon = (isset($term_icon_url['src']) && $term_icon_url['src'] != '') ? $term_icon_url['src'] : $default_marker_icon;
                 
-                $post_location_id = $row['post_city_id'];
-                if ($is_location_active) {
+                $marker_json = '{';
+                $marker_json .= '"id":"' . $post_id . '",';
+                $marker_json .= '"lat_pos": "' . $row['geo_latitude'] . '",';
+                $marker_json .= '"long_pos": "' . $row['geo_longitude'] . '",';
+                $marker_json .= '"marker_id":"' . $post_id . '_' . $default_category . '",';
+                $marker_json .= '"icon":"' . $term_icon . '",';
+                $marker_json .= '"group":"catgroup' . $default_category . '"';
+                $marker_json .= '}';
+            }
+            
+            $post_images = geodir_gt2gd_gt_parse_attachments($row['featured_image'], $row['image_ids']);
+            $featured_image = !empty($post_images) && !empty($post_images[0]['file']) ? '/' . ltrim($post_images[0]['file'], "/") : '';
+            
+            $post_location_id = $row['post_city_id'];
+            if ($is_location_active) {
+                if (!empty($gt2gd_locations[$post_location_id])) {
+                    $location_info = $gt2gd_locations[$post_location_id];
+                } else {
                     $location_info = (array)geodir_get_location_by_id( array(), $post_location_id );
+                    $gt2gd_locations[$post_location_id] = $location_info;
+                }
+            } else {
+                if (!empty($gt2gd_locations[$post_location_id])) {
+                    $location_info = $gt2gd_locations[$post_location_id];
                 } else {
                     $location_info = (array)geodir_get_gt_location_info($post_location_id);
-                    $post_location_id = $gd_default_location['location_id'];
+                    $gt2gd_locations[$post_location_id] = $location_info;
                 }
-                
-                if (empty($location_info)) {
-                    $location_info = (array)geodir_get_default_location();
-                    $post_location_id = $gd_default_location['location_id'];
-                }
-                $post_city = $location_info['city'];
-                $post_region = $location_info['region'];
-                $post_country = $location_info['country'];
-                $post_locations = '[' . $location_info['city_slug'] . '],[' . $location_info['region_slug'] . '],[' . $location_info['country_slug'] . ']';
-                
-                $data = array();
-                $data['post_id'] = $post_id;
-                $data['post_title'] = !empty($row['post_title']) ? $row['post_title'] : get_the_title($post_id);
-                $data['post_status'] = $row['post_status'];
-                $data['default_category'] = $default_category;
-                $data['post_tags'] = $post_tags;
-                $data['post_location_id'] = $post_location_id;
-                $data['marker_json'] = $marker_json;
-                $data['claimed'] = get_post_meta($post_id, 'claimed', true);
+                $post_location_id = $gd_default_location['location_id'];
+            }
+            
+            if (empty($location_info)) {
+                $location_info = $gd_default_location;
+                $post_location_id = $gd_default_location['location_id'];
+            }
+            
+            $post_city = $location_info['city'];
+            $post_region = $location_info['region'];
+            $post_country = $location_info['country'];
+            $post_locations = '[' . $location_info['city_slug'] . '],[' . $location_info['region_slug'] . '],[' . $location_info['country_slug'] . ']';
+            
+            $data = array();
+            $data['post_id'] = $post_id;
+            $data['post_title'] = !empty($row['post_title']) ? $row['post_title'] : get_the_title($post_id);
+            $data['post_status'] = $row['post_status'];
+            $data['default_category'] = $default_category;
+            $data['post_tags'] = $post_tags;
+            $data['post_location_id'] = $post_location_id;
+            $data['marker_json'] = $marker_json;
+            $data['claimed'] = get_post_meta($post_id, 'claimed', true);
 
-                $data['is_featured'] = isset( $row['is_featured'] ) && $row['is_featured'] !== '' ? $row['is_featured'] : get_post_meta($post_id, 'is_featured', true);
-                $data['featured_image'] = $featured_image;
-                $data['paid_amount'] = get_post_meta($post_id, 'paid_amount', true);
-                $data['package_id'] = $is_payment_active  ? ( isset( $row['package_pid'] ) && $row['package_pid'] !== '' ? $row['package_pid'] : get_post_meta($post_id, 'package_pid', true) ) : 0;
-                $data['alive_days'] = get_post_meta($post_id, 'alive_days', true);
-                $data['paymentmethod'] = get_post_meta($post_id, 'paymentmethod', true);
-                $data['expire_date'] = get_post_meta( $post_id, 'expire_date', true );
-                if ($gt_post_type == 'event') {
-                    $recurring_data = geodir_gt2gd_gt_event_data($row);
-                    
-                    geodir_gt2gd_create_event_schedules($recurring_data, $post_id);
-                    
-                    $recurring_dates = maybe_serialize($recurring_data);
-                    
-                    $data['is_recurring'] = $recurring_data['is_recurring'];
-                    $data['recurring_dates'] = $recurring_dates;
-                    $data['event_reg_desc'] = !empty($row['reg_desc']) ? trim($row['reg_desc']) : get_post_meta($post_id, 'reg_desc', true);
-                    $data['geodir_link_business'] = isset( $row['a_businesses'] ) ? $row['a_businesses']  :'';
+            $data['is_featured'] = isset( $row['is_featured'] ) && $row['is_featured'] !== '' ? $row['is_featured'] : get_post_meta($post_id, 'is_featured', true);
+            $data['featured_image'] = $featured_image;
+            $data['paid_amount'] = get_post_meta($post_id, 'paid_amount', true);
+            $data['package_id'] = $is_payment_active  ? ( isset( $row['package_pid'] ) && $row['package_pid'] !== '' ? $row['package_pid'] : get_post_meta($post_id, 'package_pid', true) ) : 0;
+            $data['alive_days'] = get_post_meta($post_id, 'alive_days', true);
+            $data['paymentmethod'] = get_post_meta($post_id, 'paymentmethod', true);
+            $data['expire_date'] = get_post_meta( $post_id, 'expire_date', true );
+            if ($gt_post_type == 'event') {
+                $recurring_data = geodir_gt2gd_gt_event_data($row);
+                
+                geodir_gt2gd_create_event_schedules($recurring_data, $post_id);
+                
+                $recurring_dates = maybe_serialize($recurring_data);
+                
+                $data['is_recurring'] = $recurring_data['is_recurring'];
+                $data['recurring_dates'] = $recurring_dates;
+                $data['event_reg_desc'] = !empty($row['reg_desc']) ? trim($row['reg_desc']) : get_post_meta($post_id, 'reg_desc', true);
+                $data['geodir_link_business'] = isset( $row['a_businesses'] ) ? $row['a_businesses']  :'';
+            }
+            $data['submit_time'] = strtotime( $row['post_date'] );
+            $data['post_locations'] = $post_locations;
+            $data['post_dummy'] = get_post_meta($post_id, 'tl_dummy_content', true);
+            $data[$taxonomy_category] = $post_category;
+            $data['post_address'] = $row['address'];
+            $data['post_city'] = $post_city;
+            $data['post_region'] = $post_region;
+            $data['post_country'] = $post_country;
+            $data['post_zip'] = trim( $post_zip );
+            $data['post_latitude'] = $row['geo_latitude'];
+            $data['post_longitude'] = $row['geo_longitude'];
+            if ($gt_post_type != 'event') {
+                $data['post_mapzoom'] = !empty($row['map_zoom']) ? trim($row['map_zoom']) : get_post_meta($post_id, 'map_zoom', true);
+            }
+            $data['geodir_timing'] = !empty($row['timing']) ? trim($row['timing']) : get_post_meta($post_id, 'timing', true);
+            $data['geodir_contact'] = !empty($row['contact']) ? trim($row['contact']) : get_post_meta($post_id, 'contact', true);
+            $data['geodir_email'] = !empty($row['email']) ? trim($row['email']) : get_post_meta($post_id, 'email', true);
+            $data['geodir_website'] = !empty($row['website']) ? trim($row['website']) : get_post_meta($post_id, 'website', true);
+            $data['geodir_twitter'] = !empty($row['twitter']) ? trim($row['twitter']) : get_post_meta($post_id, 'twitter', true);
+            $data['geodir_facebook'] = !empty($row['facebook']) ? trim($row['facebook']) : get_post_meta($post_id, 'facebook', true);
+            $data['geodir_video'] = !empty($row['video']) ? trim($row['video']) : get_post_meta($post_id, 'video', true);
+            $data['geodir_special_offers'] = !empty($row['proprty_feature']) ? trim($row['proprty_feature']) : get_post_meta($post_id, 'proprty_feature', true);
+            if ($is_location_active) {
+                $data['post_neighbourhood'] = !empty($row['post_hood_id']) ? trim($row['post_hood_id']) : get_post_meta($post_id, 'post_hood_id', true);
+            }
+            
+            $sql = "SELECT COUNT(r.rating_id) AS reviews, AVG(r.rating_rating) AS rating FROM " . $wpdb->prefix . "ratings AS r INNER JOIN " . $wpdb->prefix . "comments AS c ON r.comment_id = c.comment_ID WHERE c.comment_parent = 0 AND r.rating_rating > 0 AND rating_postid = " . (int)$post_id;
+            $post_review = $wpdb->get_row( $sql );
+            
+            $overall_rating = 0;
+            $rating_count = 0;
+            if ( !empty( $post_review ) ) {
+                $overall_rating = round( $post_review->rating, 1 );
+                $rating_count = $post_review->reviews;
+            }
+            
+            $data['overall_rating'] = $overall_rating;
+            $data['rating_count'] = $rating_count;
+            update_post_meta($post_id, 'overall_rating', $overall_rating);
+            update_post_meta($post_id, 'rating_count', $rating_count);
+            
+            $gt_meta_fields = array();
+            
+            if (!empty($custom_fields)) {
+                foreach ($custom_fields as $custom_field) {
+                    $gt_meta_fields[] = $custom_field;
+                    $custom_field_san = preg_replace("/[^a-zA-Z0-9]+/", "", $custom_field);
+                    $data[$custom_field_san] = trim(get_post_meta($post_id, $custom_field, true));
                 }
-                $data['submit_time'] = strtotime( $row['post_date'] );
-                $data['post_locations'] = $post_locations;
-                $data['post_dummy'] = get_post_meta($post_id, 'tl_dummy_content', true);
-                $data[$taxonomy_category] = $post_category;
-                $data['post_address'] = $row['address'];
-                $data['post_city'] = $post_city;
-                $data['post_region'] = $post_region;
-                $data['post_country'] = $post_country;
-                $data['post_zip'] = trim( $post_zip );
-                $data['post_latitude'] = $row['geo_latitude'];
-                $data['post_longitude'] = $row['geo_longitude'];
-                if ($gt_post_type != 'event') {
-                    $data['post_mapzoom'] = !empty($row['map_zoom']) ? trim($row['map_zoom']) : get_post_meta($post_id, 'map_zoom', true);
-                }
-                $data['geodir_timing'] = !empty($row['timing']) ? trim($row['timing']) : get_post_meta($post_id, 'timing', true);
-                $data['geodir_contact'] = !empty($row['contact']) ? trim($row['contact']) : get_post_meta($post_id, 'contact', true);
-                $data['geodir_email'] = !empty($row['email']) ? trim($row['email']) : get_post_meta($post_id, 'email', true);
-                $data['geodir_website'] = !empty($row['website']) ? trim($row['website']) : get_post_meta($post_id, 'website', true);
-                $data['geodir_twitter'] = !empty($row['twitter']) ? trim($row['twitter']) : get_post_meta($post_id, 'twitter', true);
-                $data['geodir_facebook'] = !empty($row['facebook']) ? trim($row['facebook']) : get_post_meta($post_id, 'facebook', true);
-                $data['geodir_video'] = !empty($row['video']) ? trim($row['video']) : get_post_meta($post_id, 'video', true);
-                $data['geodir_special_offers'] = !empty($row['proprty_feature']) ? trim($row['proprty_feature']) : get_post_meta($post_id, 'proprty_feature', true);
-                if ($is_location_active) {
-                    $data['post_neighbourhood'] = !empty($row['post_hood_id']) ? trim($row['post_hood_id']) : get_post_meta($post_id, 'post_hood_id', true);
+            }
+
+            $gd_listing_table = $wpdb->prefix . 'geodir_' . $gd_post_type . '_detail';
+            
+            $sql = "SELECT COUNT(*) FROM " . $gd_listing_table . " WHERE post_id = '". (int)$post_id ."'";
+            $exists_row = $wpdb->get_var( $sql );
+            
+            if ( !empty( $exists_row ) ) {
+                $return = $wpdb->update( $gd_listing_table, $data, array( 'post_id' => (int)$post_id ) );
+            } else {
+                $return = $wpdb->insert( $gd_listing_table, $data );
+            }
+            
+            if ($return) {
+                $gt_meta_keys = array('address', 'add_feature', 'alive_days', 'a_businesses', 'claimed', 'contact', 'contact_show', 'coupon_used', 'email', 'email_show', 'end_date', 'end_time', 'expire_date', 'facebook', 'geo_latitude', 'geo_longitude', 'height', 'is_featured', 'map_view', 'map_zoom', 'package_pid', 'paid_amount', 'paymentmethod', 'post_city_id', 'timing', 'tl_dummy_content', 'twitter', 'video', 'website', 'proprty_feature', 'pt_dummy_content', 'recurring', 'recurring_dates', 'recurring_limit', 'reg_desc', 'reg_fees', 'web_show', 'st_date', 'st_time');
+                
+                if (!empty($gt_meta_fields)) {
+                    $gt_meta_keys = array_merge($gt_meta_keys, $gt_meta_fields);
                 }
                 
-                $sql = "SELECT COUNT(r.rating_id) AS reviews, AVG(r.rating_rating) AS rating FROM " . $wpdb->prefix . "ratings AS r INNER JOIN " . $wpdb->prefix . "comments AS c ON r.comment_id = c.comment_ID WHERE c.comment_parent = 0 AND r.rating_rating > 0 AND rating_postid = " . (int)$post_id;
-                $post_review = $wpdb->get_row( $sql );
+                $gt_meta_keys = "'" . implode("','", $gt_meta_keys) . "'";
                 
-                $overall_rating = 0;
-                $rating_count = 0;
-                if ( !empty( $post_review ) ) {
-                    $overall_rating = round( $post_review->rating, 1 );
-                    $rating_count = $post_review->reviews;
-                }
+                $wpdb->query("DELETE FROM " . $wpdb->postmeta . " WHERE post_id = '" . (int)$post_id . "' AND meta_key IN(" . $gt_meta_keys . ")");
+            }
+            
+            // save attachments
+            if (!empty($post_images)) {
+                $wpdb->query("DELETE FROM " . $wpdb->prefix . "geodir_attachments WHERE post_id = '" . $post_id . "'");
                 
-                $data['overall_rating'] = $overall_rating;
-                $data['rating_count'] = $rating_count;
-                update_post_meta($post_id, 'overall_rating', $overall_rating);
-                update_post_meta($post_id, 'rating_count', $rating_count);
-                
-                $gt_meta_fields = array();
-                
-                if (!empty($custom_fields)) {
-                    foreach ($custom_fields as $custom_field) {
-                        $gt_meta_fields[] = $custom_field;
-                        $custom_field_san = preg_replace("/[^a-zA-Z0-9]+/", "", $custom_field);
-                        $data[$custom_field_san] = trim(get_post_meta($post_id, $custom_field, true));
+                $menu_order = 1;
+                foreach ($post_images as $post_image) {
+                    if (!empty($post_image['file'])) {
+                        $attachment = array();
+                        $attachment['post_id'] = $post_id;
+                        $attachment['title'] = $post_image['attachment_title'];
+                        $attachment['file'] = '/' . ltrim($post_image['file'], "/");
+                        $attachment['mime_type'] = $post_image['attachment_mime_type'];
+                        $attachment['menu_order'] = $menu_order;
+                        
+                        $wpdb->insert( $wpdb->prefix . 'geodir_attachments', $attachment );
+                        
+                        $menu_order++;
                     }
-                }
-
-                $gd_listing_table = $wpdb->prefix . 'geodir_' . $gd_post_type . '_detail';
-                
-                $sql = "SELECT COUNT(*) FROM " . $gd_listing_table . " WHERE post_id = '". (int)$post_id ."'";
-                $exists_row = $wpdb->get_var( $sql );
-                
-                if ( !empty( $exists_row ) ) {
-                    $return = $wpdb->update( $gd_listing_table, $data, array( 'post_id' => (int)$post_id ) );
-                } else {
-                    $return = $wpdb->insert( $gd_listing_table, $data );
-                }
-                
-
-
-                if ($return) {
-                    $gt_meta_keys = array('address', 'add_feature', 'alive_days', 'a_businesses', 'claimed', 'contact', 'contact_show', 'coupon_used', 'email', 'email_show', 'end_date', 'end_time', 'expire_date', 'facebook', 'geo_latitude', 'geo_longitude', 'height', 'is_featured', 'map_view', 'map_zoom', 'package_pid', 'paid_amount', 'paymentmethod', 'post_city_id', 'timing', 'tl_dummy_content', 'twitter', 'video', 'website', 'proprty_feature', 'pt_dummy_content', 'recurring', 'recurring_dates', 'recurring_limit', 'reg_desc', 'reg_fees', 'web_show', 'st_date', 'st_time');
-                    
-                    if (!empty($gt_meta_fields)) {
-                        $gt_meta_keys = array_merge($gt_meta_keys, $gt_meta_fields);
-                    }
-                    
-                    $gt_meta_keys = "'" . implode("','", $gt_meta_keys) . "'";
-                    
-                    $wpdb->query("DELETE FROM " . $wpdb->postmeta . " WHERE post_id = '" . (int)$post_id . "' AND meta_key IN(" . $gt_meta_keys . ")");
-                }
-                
-                // save attachments
-                if (!empty($post_images)) {
-                    $wpdb->query("DELETE FROM " . $wpdb->prefix . "geodir_attachments WHERE post_id = '" . $post_id . "'");
-                    
-                    $menu_order = 1;
-                    foreach ($post_images as $post_image) {
-                        if (!empty($post_image['file'])) {
-                            $attachment = array();
-                            $attachment['post_id'] = $post_id;
-                            $attachment['title'] = $post_image['attachment_title'];
-                            $attachment['file'] = '/' . ltrim($post_image['file'], "/");
-                            $attachment['mime_type'] = $post_image['attachment_mime_type'];
-                            $attachment['menu_order'] = $menu_order;
-                            
-                            $wpdb->insert( $wpdb->prefix . 'geodir_attachments', $attachment );
-                            
-                            $menu_order++;
-                        }
-                    }
-                }
-                
-                $wpdb->flush();
-                if (!empty($wpdb->queries)) {
-                    $wpdb->queries = array();
                 }
             }
             
-            $wpdb->query("UPDATE " . $wpdb->posts . " SET post_type = '" . $gd_post_type . "' WHERE post_type = '" . $gt_post_type . "'");
-
+            $wpdb->query("UPDATE " . $wpdb->posts . " SET post_type = '" . $gd_post_type . "' WHERE ID = '" . $post_id . "'");
             $wpdb->flush();
             if (!empty($wpdb->queries)) {
                 $wpdb->queries = array();
             }
+            
+            // clear the post cache so the post_type is updated
+            clean_post_cache($post_id);
 
-            // set the category meta and the featured image
-            geodir_gt2gd_set_listing_Image_and_cat($gd_post_type);
+            // updae the category post meta
+            geodir_set_postcat_structure($post_id , $taxonomy_category, $default_category, '');
+
+            // set the featured image
+            geodir_set_wp_featured_image($post_id);
         }
     }
 
-    return true;
+    return $done;
 }
 
 
@@ -2176,4 +2240,50 @@ function geodir_gt2gd_create_event_schedules($event_schedule_info, $post_id) {
     }
 
     return true;
+}
+
+function geodir_gt2gd_count_total_listings() {
+    $listings = (int)geodir_gt2gd_count_listings('place');
+    
+    if (geodir_gt2gd_is_active('geodir_event_manager')) {
+        $listings += (int)geodir_gt2gd_count_listings('event');
+    }
+    
+    return $listings;
+}
+
+function geodir_gt2gd_count_listings( $post_type ) {
+    global $wpdb;
+        
+    $table = $wpdb->prefix . 'gt_' . $post_type . '_detail';
+
+    $query = $wpdb->prepare( "SELECT COUNT({$wpdb->posts}.ID) FROM {$wpdb->posts} INNER JOIN {$table} ON {$table}.post_id = {$wpdb->posts}.ID WHERE {$wpdb->posts}.post_type = %s", $post_type );
+
+    $count = (int)$wpdb->get_var( $query );
+
+    return $count;
+}
+
+function geodir_gt2gd_get_listings( $post_type, $per_page = 0, $page_no = 0 ) {
+    global $wpdb;
+        
+    $table = $wpdb->prefix . 'gt_' . $post_type . '_detail';
+
+    $limit = '';
+    if ( $per_page > 0 && $page_no > 0 ) {
+        $offset = ( $page_no - 1 ) * $per_page;
+        
+        if ( $offset > 0 ) {
+            $limit = " LIMIT " . $offset . "," . $per_page;
+        } else {
+            $limit = " LIMIT " . $per_page;
+        }
+    }
+
+    $query = $wpdb->prepare( "SELECT {$table}.*, {$wpdb->posts}.ID, {$wpdb->posts}.post_status, {$wpdb->posts}.post_date FROM {$wpdb->posts} INNER JOIN {$table} ON {$table}.post_id = {$wpdb->posts}.ID WHERE {$wpdb->posts}.post_type = %s ORDER BY {$wpdb->posts}.ID ASC" . $limit, $post_type );
+
+    $query = apply_filters( 'geodir_gt2gd_get_listings_query', $query, $post_type );
+    $results = (array)$wpdb->get_results( $query );
+
+    return apply_filters( 'geodir_gt2gd_get_listings', $results, $post_type );
 }
