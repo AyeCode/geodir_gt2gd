@@ -126,3 +126,17 @@ font.gt2gd-found, font.gt2gd-not-found  {
 	font-size: 80%;
 	text-indent: 5px;
 }
+span.gt2gd-time {
+    color: #0073aa;
+    display: inline-block;
+    font-size: 11px;
+    margin-right: 30%;
+    float: right;
+}
+.gt2gd-wrap .progress {
+    margin-bottom: 10px;
+    display: none;
+}
+.gt2gd-wrap .gt2gd-progress.gt2gd-swait {
+    background-position: center top 9px!important;
+}
