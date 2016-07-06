@@ -12,30 +12,30 @@ if ( !defined( 'WPINC' ) ) {
 }
 
 /**
- * Plguin activation hook.
+ * Plugin activation hook.
  *
  * @since 1.0.0
  */
 function geodir_gt2gd_activation() {
-    // Plguin activation stuff here.
+    // Plugin activation stuff here.
 }
 
 /**
- * Plguin deactivation hook.
+ * Plugin deactivation hook.
  *
  * @since 1.0.0
  */
 function geodir_gt2gd_deactivation() {
-    // Plguin deactivation stuff here.
+    // Plugin deactivation stuff here.
 }
 
 /**
- * Plguin uninstall hook.
+ * Plugin uninstall hook.
  *
  * @since 1.0.0
  */
 function geodir_gt2gd_uninstall() {
-    // Plguin uninstall stuff here.
+    // Plugin uninstall stuff here.
 }
 
 /**
@@ -44,7 +44,7 @@ function geodir_gt2gd_uninstall() {
  * @since 1.0.0
  */
 function geodir_gt2gd_plugin_activated() {
-    // Plguin activated stuff here.
+    // Plugin activated stuff here.
 }
 
 /**
@@ -79,15 +79,15 @@ function geodir_gt2gd_admin_init() {
  * @since 1.0.0
  */
 function geodir_gt2gd_enqueue_scripts() {
-    wp_register_style( 'gt2gd-progessbar-style', GT2GD_PLUGIN_URL . '/assets/css/bootstrap-progressbar.min.css', array(), '3.3.4' );
-    wp_enqueue_style( 'gt2gd-progessbar-style' );
+    wp_register_style( 'gt2gd-progressbar-style', GT2GD_PLUGIN_URL . '/assets/css/bootstrap-progressbar.min.css', array(), '3.3.4' );
+    wp_enqueue_style( 'gt2gd-progressbar-style' );
     
     // Register and enqueue the style.
     wp_register_style( 'gt2gd-style', GT2GD_PLUGIN_URL . '/assets/css/style.css', array(), GT2GD_VERSION );
     wp_enqueue_style( 'gt2gd-style' );
     
-    wp_register_script( 'gt2gd-progessbar-script', GT2GD_PLUGIN_URL . '/assets/js/bootstrap-progressbar.min.js', array('jquery'), '3.3.4' );
-    wp_enqueue_script( 'gt2gd-progessbar-script' );
+    wp_register_script( 'gt2gd-progressbar-script', GT2GD_PLUGIN_URL . '/assets/js/bootstrap-progressbar.min.js', array('jquery'), '3.3.4' );
+    wp_enqueue_script( 'gt2gd-progressbar-script' );
     
     // Register the script.
     wp_register_script( 'gt2gd-script', GT2GD_PLUGIN_URL . '/assets/js/script.js', array(), GT2GD_VERSION );
@@ -98,7 +98,7 @@ function geodir_gt2gd_enqueue_scripts() {
     $javascript_vars = array(
         'plugin_url' => GT2GD_PLUGIN_URL,
         'nonce' => wp_create_nonce( 'geodir_gt2gd_nonce' ),
-        'msg_confirm' => esc_attr( __( 'Are you sure you want to start GeoTheme To GeoDirectory conversion? It CAN NOT BE UNDONE so we recommands to take full backup before starting conversion.', 'geodir_gt2gd' ) ),
+        'msg_confirm' => esc_attr( __( 'Are you sure you want to start GeoTheme To GeoDirectory conversion? It CAN NOT BE UNDONE so we recommends to take full backup before starting conversion.', 'geodir_gt2gd' ) ),
         'msg_completed' => esc_attr( __( 'No item remain for GeoTheme to GeoDirectory conversion!', 'geodir_gt2gd' ) ),
         'msg_gt2gd_done' => esc_attr( __( 'That\'s it! GeoTheme To GeoDirectory conversion has been completed. You can enjoy with GeoDirectory after disabling GeoTheme :)', 'geodir_gt2gd' ) ),
         'txt_converting' => __( 'Converting...', 'geodir_gt2gd' ),
@@ -160,9 +160,9 @@ function geodir_gt2gd_dashboard() {
                         <div class="inside gt2gd-box">
                             <h4><?php _e( 'Post Types:', 'geodir_gt2gd' );?> <font class="gt2gd-ptypes"><?php echo $gd_post_types;?></font></h4>
                             <ul class="gt2gd-steps">
-                                <li class="gt2gd-hstatus"><?php _e( 'Item', 'geodir_gt2gd' );?><span class="gt2gd-status"><?php _e( 'Status', 'geodir_gt2gd' );?></span></li>
+                                <li class="gt2gd-hstatus"><?php _e( 'Item', 'geodir_gt2gd' );?><span class="gt2gd-time"></span><span class="gt2gd-status"><?php _e( 'Status', 'geodir_gt2gd' );?></span></li>
                                 <?php foreach ( $items as $id => $item ) { $class = !empty($item['progress']) ? ' gt2gd-progress' : ''; ?>
-                                <li id="gt2gd-<?php echo $id;?>" class="gt2gd-s<?php echo $item['status'] . $class;?>"><?php echo $item['title'];?><span class="gt2gd-status"><?php echo $item['status_title'];?></span>
+                                <li id="gt2gd-<?php echo $id;?>" class="gt2gd-s<?php echo $item['status'] . $class;?>"><?php echo $item['title'];?><span class="gt2gd-time"></span><span class="gt2gd-status"><?php echo $item['status_title'];?></span>
                                 <?php if (!empty($item['progress']) && !empty($item['total'])) { ?><div class="progress progress-striped"><div class="progress-bar progress-bar-success active" role="progressbar" data-transitiongoal="0" aria-valuemin="0" aria-valuemax="<?php echo (int)$item['total'];?>"></div></div>
                                 <?php } ?>
                                 </li>
@@ -194,7 +194,7 @@ function geodir_gt2gd_dashboard() {
                         </div>
                         <div class="inside gt2gd-reqs">
                             <div class="gt2gd-widget">
-                                <h4><?php _e( 'Recommanded plugins installed/active on site for better conversion:', 'geodir_gt2gd' );?></h4>
+                                <h4><?php _e( 'Recommended plugins installed/active on site for better conversion:', 'geodir_gt2gd' );?></h4>
                                 <ul>
                                     <li><?php _e( '- GeoDirectory Events', 'geodir_gt2gd' );?><?php echo (geodir_gt2gd_is_active('geodir_event_manager') ? $active_text : $not_active_text);?></li>
                                     <li><?php _e( '- GeoDirectory Location Manager', 'geodir_gt2gd' );?><?php echo (geodir_gt2gd_is_active('geodir_location_manager') ? $active_text : $not_active_text);?></li>
@@ -222,7 +222,7 @@ function geodir_gt2gd_dashboard() {
  *
  * @since 1.0.0
  *
- * @param bool $convertable If True then retrives only convertable items. Default: True.
+ * @param bool $convertable If True then retrieves only convertable items. Default: True.
  * @param string $single Should be from first, last or null.
  * @return null|array Items array.
  */
@@ -299,7 +299,7 @@ function geodir_gt2gd_conversion_items( $convertable = true, $single = false ) {
  * @since 1.0.0
  *
  * @param string $item Item name. Ex: listings.
- * @param bool $convertable If True then retrives only convertable item. Default: True.
+ * @param bool $convertable If True then retrieves only convertable item. Default: True.
  * @return null|array Items array or empty result.
  */
 function geodir_gt2gd_next_item( $item, $convertable = true ) {
@@ -357,13 +357,9 @@ function geodir_gt2gd_gt_installed( $installed ) {
  *
  * @since 1.0.0
  *
- * @global object $wpdb WordPress Database object.
- * @global null|object $wp_filesystem WP_Filesystem object.
  * @return string Json data.
  */
-function geodir_gt2gd_ajax() {
-    global $wpdb, $wp_filesystem, $gd_session;
-    
+function geodir_gt2gd_ajax() {    
     // try to set higher limits for export
     @set_time_limit(0);
     @ini_set('max_input_time', 0);
@@ -383,9 +379,6 @@ function geodir_gt2gd_ajax() {
     $nonce = isset( $_REQUEST['_nonce'] ) ? $_REQUEST['_nonce'] : NULL;
     $item = isset( $_REQUEST['_item'] ) ? $_REQUEST['_item'] : NULL;
     $first = !empty( $_REQUEST['_f'] ) ? true : false;
-    if ($first) {
-        $gd_session->set('start', microtime(true));
-    }
 
     if ( !wp_verify_nonce( $nonce, 'geodir_gt2gd_nonce' ) ) {
         wp_send_json( $json );
@@ -405,7 +398,7 @@ function geodir_gt2gd_ajax() {
     $json['next'] = NULL;
 
     if ( !empty( $next_item ) ) {
-        $convert_status = geodir_gt2gd_convert_item( $item );
+        $convert_status = geodir_gt2gd_convert_item( $item, $items[$item] );
         
         if ( $convert_status['status'] == 'done' ) {
             update_option( 'geodir_gt2gd_done_' . $item, 1 );
@@ -417,18 +410,13 @@ function geodir_gt2gd_ajax() {
             $json['done'] = $convert_status['done'];
         }
         
-        if (!empty($convert_status['batch'])) {
+        if ($json['status'] == 'batch') {
             $json['next'] = $item;
         } else if ( $next_item['id'] != $item ) {
             $json['next'] = $next_item['id'];
         } else {
             $json['next'] = 'done';
-            $json['timet'] = round(microtime(true) - $gd_session->get('start'), 3);
-            geodir_error_log('Total Time: ' . $json['timet'] . ' sec');
         }
-        
-        $json['time'] = isset($convert_status['time']) ? $convert_status['time'] : 0;
-        $json['time'] = max($json['time'], 0.001);
     } else {
         $json['error'] = wp_sprintf( __( 'Requested item "%s" not supported!', 'geodir_gt2gd' ), $item );
         $json['status'] = 'fail';
@@ -445,18 +433,16 @@ function geodir_gt2gd_ajax() {
  * @since 1.0.0
  *
  * @param string $item Item name. Ex: listings.
+ * @param array $item_data Details of item being converted.
  * @return array Status of item conversion.
  */
-function geodir_gt2gd_convert_item( $item ) {
-    global $gd_session;
-    $limit = rand(100, 300); // set limit here
-    
+function geodir_gt2gd_convert_item( $item, $item_data = array() ) {
     $status = array();
     $status['status'] = 'fail';
     $status['status_txt'] = __( 'Fail', 'geodir_gt2gd' );
-    $start =  microtime(true);
-
+    
     $return = false;
+    $batch = 0;
 
     switch ( $item ) {
         case 'locations': {
@@ -476,30 +462,32 @@ function geodir_gt2gd_convert_item( $item ) {
         }
         break;
         case 'listings': {
+            $total = !empty($item_data['total']) ? $item_data['total'] : 0;
+            $max = $total > 1000 ? min(ceil($total * 10 / 100), 1000) : 100;
+            $min = max(ceil($max * 10 / 100), 10);
+            
+            $limit = rand($min, $max);
+            $limit = apply_filters('geodir_gt2gd_convert_listings_limit', $limit);
+            
             if (($listings = (int)geodir_gt2gd_count_listings('place')) > 0) {
-                $return = geodir_gt2gd_convert_batch_listings('place', $limit);
-                $status['done'] = $return;
+                $done = geodir_gt2gd_convert_batch_listings('place', $limit);
+                $status['done'] = $done;
                 
-                if (($listings - $return) > 0) {
-                    $status['batch'] = $listings - $return;
-                    return $status;
+                if ($listings - $done > 0) {
+                    $batch = $listings - $done;
                 } else if (geodir_gt2gd_is_active('geodir_event_manager') && ($listings = (int)geodir_gt2gd_count_listings('event')) > 0) {
-                    $status['batch'] = $listings;
-                    return $status;
-                } else {
-                    $return = true;
+                    $batch = $listings;
                 }
             } else if (geodir_gt2gd_is_active('geodir_event_manager') && ($listings = (int)geodir_gt2gd_count_listings('event')) > 0) {
-                $return = geodir_gt2gd_convert_batch_listings('event', $limit);
-                $status['done'] = $return;
+                $done = geodir_gt2gd_convert_batch_listings('event', $limit);
+                $status['done'] = $done;
                 
-                if (($listings - $return) > 0) {
-                    $status['batch'] = ($listings - $return);
-                    return $status;
-                } else {
-                    $return = true;
+                if ($listings - $done > 0) {
+                    $batch = $listings - $done;
                 }
-            } else {
+            }
+            
+            if (!$batch > 0) {
                 $return = true;
             }
         }
@@ -517,12 +505,16 @@ function geodir_gt2gd_convert_item( $item ) {
         }
         break;
     }
+    
+    if ($batch > 0) {
+        $status['status'] = 'batch';
+        $status['status_txt'] = __( 'Converting...', 'geodir_gt2gd' );
+        return $status;
+    }
 
     if ( $return ) {
         $status['status'] = 'done';
         $status['status_txt'] = __( 'Done', 'geodir_gt2gd' );
-        $status['time'] = round(microtime(true) - $start, 3);
-        geodir_error_log('Convert ' . $item . ': ' . $status['time'] . ' sec');
     }
 
     return $status;
@@ -856,8 +848,11 @@ function geodir_gt2gd_convert_tags() {
  * @since 1.0.2
  *
  * @global object $wpdb WordPress Database object.
+ * @global array $gt2gd_locations Array of location info.
  *
- * @return bool Conversion status.
+ * @param string $gt_post_type The post type.
+ * @param int $limit Limit of GT to GD listing conversion in one batch. Default 100.
+ * @return int No. of converted listings.
  */
 function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
     global $wpdb, $gt2gd_locations;
@@ -1108,7 +1103,7 @@ function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
             // clear the post cache so the post_type is updated
             clean_post_cache($post_id);
 
-            // updae the category post meta
+            // update the category post meta
             geodir_set_postcat_structure($post_id , $taxonomy_category, $default_category, '');
 
             // set the featured image
@@ -1118,33 +1113,6 @@ function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
 
     return $done;
 }
-
-
-function geodir_gt2gd_set_listing_Image_and_cat($post_type){
-
-    global $wpdb;
-
-    $gd_listing_table = $wpdb->prefix . 'geodir_' . $post_type . '_detail';
-    $sql = "SELECT post_id,default_category FROM $gd_listing_table";
-    $gd_rows = $wpdb->get_results($sql);
-    $taxonomy_category = $post_type . 'category';
-
-    if(empty( $gd_rows)){return;}
-
-        foreach( $gd_rows as $row){
-            // clear the post cache so the post_type is updated
-            clean_post_cache( $row->post_id );
-
-            // updae the category post meta
-            geodir_set_postcat_structure((int)$row->post_id , $taxonomy_category, $row->default_category, '');
-
-            // set the featured image
-            geodir_set_wp_featured_image($row->post_id);
-        }
-}
-
-
-
 
 /**
  * GeoTheme to GeoDirectory reviews and ratings conversion.
@@ -1284,7 +1252,7 @@ function geodir_gt2gd_convert_invoices() {
             
             $status = 'pending';
             if ($type == 'subscription-payment' || $type == 'subscription-active' || $type == 'paid') {
-                $status = 'confimed';
+                $status = 'confirmed';
             } else if ($type == 'subscription-canceled' || $type == 'canceled') {
                 $status = 'canceled';
             }
@@ -1394,7 +1362,7 @@ function geodir_gt2gd_convert_claims() {
 }
 
 /**
- * Retrive region & country data for city.
+ * Retrieve region & country data for city.
  *
  * @since 1.0.0
  *
@@ -1543,15 +1511,14 @@ function geodir_gt2gd_convert_custom_fields( $gd_post_type ) {
             $cat_filter = array_intersect( $cat_filter, $gd_place_terms );
 
             // fix values having space after comma,
-            if(($gt_field_type=='select' || $gt_field_type=='multiselect' ) && isset( $custom_field->option_values) &&  $custom_field->option_values){
-                $temp_option_values =  $custom_field->option_values;
-                $temp_option_values = explode(",",$temp_option_values);
-                if(is_array($temp_option_values)){
-                    $custom_field->option_values = implode(",", array_map('trim',$temp_option_values));
+            if (($gt_field_type=='select' || $gt_field_type=='multiselect' ) && isset( $custom_field->option_values) &&  $custom_field->option_values) {
+                $temp_option_values = $custom_field->option_values;
+                $temp_option_values = explode(",", $temp_option_values);
+                
+                if (is_array($temp_option_values)) {
+                    $custom_field->option_values = implode(",", array_map('trim', $temp_option_values));
                 }
-
             }
-
 
             $save_field = array();
             $save_field['post_type'] = $gd_post_type;
@@ -1710,7 +1677,7 @@ function geodir_gt2gd_gt_parse_attachments( $featured_image, $image_ids ) {
 }
 
 /**
- * Retrives the geotheme event data to export.
+ * Retrieves the geotheme event data to export.
  *
  * @since 1.0.0
  *
@@ -2242,6 +2209,13 @@ function geodir_gt2gd_create_event_schedules($event_schedule_info, $post_id) {
     return true;
 }
 
+/**
+ * Get the total posts counts for geotheme post types.
+ *
+ * @since 1.0.2
+ *
+ * @return int Total geotheme post types posts count.
+ */
 function geodir_gt2gd_count_total_listings() {
     $listings = (int)geodir_gt2gd_count_listings('place');
     
@@ -2252,6 +2226,16 @@ function geodir_gt2gd_count_total_listings() {
     return $listings;
 }
 
+/**
+ * Get the posts counts for the current post type.
+ *
+ * @since 1.0.2
+ *
+ * @global object $wpdb WordPress Database object.
+ *
+ * @param string $post_type Post type.
+ * @return int Posts count.
+ */
 function geodir_gt2gd_count_listings( $post_type ) {
     global $wpdb;
         
@@ -2264,7 +2248,19 @@ function geodir_gt2gd_count_listings( $post_type ) {
     return $count;
 }
 
-function geodir_gt2gd_get_listings( $post_type, $per_page = 0, $page_no = 0 ) {
+/**
+ * Get the posts for the current post type.
+ *
+ * @since 1.0.2
+ *
+ * @global object $wpdb WordPress Database object.
+ *
+ * @param string $post_type The post type.
+ * @param int $per_page Per page limit. Default 0.
+ * @param int $page_no Page number. Default 0.
+ * @return array Array of posts data.
+ */
+function geodir_gt2gd_get_listings( $post_type, $per_page = 0, $page_no = 1 ) {
     global $wpdb;
         
     $table = $wpdb->prefix . 'gt_' . $post_type . '_detail';

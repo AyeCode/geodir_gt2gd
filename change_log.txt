@@ -1,5 +1,8 @@
+v1.0.2
+Convert listings in batch using ajax to fix timeout issue when converting large number of listings - FIXED
+
 v1.0.1
-Link business to event saving to wrong DB columb - FIXED
+Link business to event saving to wrong DB column - FIXED
 Price package allow linking events aves wrong value - FIXED
 
 v1.0.0
