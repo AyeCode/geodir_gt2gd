@@ -100,7 +100,7 @@ function geodir_gt2gd_enqueue_scripts() {
         'nonce' => wp_create_nonce( 'geodir_gt2gd_nonce' ),
         'msg_confirm' => esc_attr( __( 'Are you sure you want to start GeoTheme To GeoDirectory conversion? It CAN NOT BE UNDONE so we recommends to take full backup before starting conversion.', 'geodir_gt2gd' ) ),
         'msg_completed' => esc_attr( __( 'No item remain for GeoTheme to GeoDirectory conversion!', 'geodir_gt2gd' ) ),
-        'msg_gt2gd_done' => esc_attr( __( 'That\'s it! GeoTheme To GeoDirectory conversion has been completed. You can enjoy with GeoDirectory after disabling GeoTheme :)', 'geodir_gt2gd' ) ),
+        'msg_gt2gd_done' => esc_attr( __( 'That\'s it! GeoTheme To GeoDirectory conversion has been completed. Enjoy with GeoDirectory :)', 'geodir_gt2gd' ) ),
         'txt_converting' => __( 'Converting...', 'geodir_gt2gd' ),
         'first_item' => !empty($item) && isset($item['id']) ? $item['id'] : ''
     );
@@ -694,7 +694,7 @@ function geodir_gt2gd_convert_prices() {
             $price['cat_limit'] = $row['cat_limit'];
             $price['post_type'] = geodir_gt2gd_gd_post_type( $post_type );
             $price['link_business_pkg'] = $row['link_business_pkg'];
-            $price['recurring_pkg'] = ($row['recurring_pkg']) ? '0' : '1';//( $post_type == 'event' || $post_type == 'gd_event' ) ? 1 : 0;
+            $price['recurring_pkg'] = $row['recurring_pkg'] ? '0' : '1';
             $price['reg_desc_pkg'] = $row['reg_desc_pkg'];
             $price['reg_fees_pkg'] = $row['reg_fees_pkg'];
             $price['downgrade_pkg'] = $row['downgrade_pkg'];
@@ -767,6 +767,11 @@ function geodir_gt2gd_convert_categories() {
 
     $sql = "UPDATE " . $wpdb->term_taxonomy . " SET taxonomy = '" . $gd_taxonomy_place . "' WHERE taxonomy = '" . $gt_taxonomy_place . "'";
     $wpdb->query( $sql );
+    
+    // Update menu items
+    $wpdb->query( "UPDATE " . $wpdb->postmeta . " SET meta_value = 'gd_place' WHERE meta_key = '_menu_item_object' AND meta_value = 'place'" );
+    
+    $wpdb->query( "UPDATE " . $wpdb->postmeta . " SET meta_value = '" . $gd_taxonomy_place . "' WHERE meta_key = '_menu_item_object' AND meta_value = '" . $gt_taxonomy_place . "'" );
 
     $sql = "SELECT option_name FROM " . $wpdb->options . " WHERE option_name LIKE 'tax_meta_place_%'";
     $rows = $wpdb->get_results( $sql );
@@ -788,6 +793,11 @@ function geodir_gt2gd_convert_categories() {
         
         $sql = "UPDATE " . $wpdb->term_taxonomy . " SET taxonomy = '" . $gd_taxonomy_event . "' WHERE taxonomy = '" . $gt_taxonomy_event . "'";
         $wpdb->query( $sql );
+        
+        // Update menu items
+        $wpdb->query( "UPDATE " . $wpdb->postmeta . " SET meta_value = '" . $gd_taxonomy_event . "' WHERE meta_key = '_menu_item_object' AND meta_value = '" . $gt_taxonomy_event . "'" );
+        
+        $wpdb->query( "UPDATE " . $wpdb->postmeta . " SET meta_value = 'gd_event' WHERE meta_key = '_menu_item_object' AND meta_value = 'event'" );
         
         $sql = "SELECT option_name FROM " . $wpdb->options . " WHERE option_name LIKE 'tax_meta_event_%'";
         $rows = $wpdb->get_results( $sql );
@@ -829,6 +839,9 @@ function geodir_gt2gd_convert_tags() {
 
     $sql = "UPDATE " . $wpdb->term_taxonomy . " SET taxonomy = '" . $gd_taxonomy_place . "' WHERE taxonomy = '" . $gt_taxonomy_place . "'";
     $wpdb->query( $sql );
+    
+    // Update menu items
+    $wpdb->query( "UPDATE " . $wpdb->postmeta . " SET meta_value = '" . $gd_taxonomy_place . "' WHERE meta_key = '_menu_item_object' AND meta_value = '" . $gt_taxonomy_place . "'" );
 
     // event tags
     if ( geodir_gt2gd_is_active( 'geodir_event_manager' ) ) {
@@ -837,6 +850,9 @@ function geodir_gt2gd_convert_tags() {
         
         $sql = "UPDATE " . $wpdb->term_taxonomy . " SET taxonomy = '" . $gd_taxonomy_event . "' WHERE taxonomy = '" . $gt_taxonomy_event . "'";
         $wpdb->query( $sql );
+        
+        // Update menu items
+        $wpdb->query( "UPDATE " . $wpdb->postmeta . " SET meta_value = '" . $gd_taxonomy_event . "' WHERE meta_key = '_menu_item_object' AND meta_value = '" . $gt_taxonomy_event . "'" );
     }
 
     return true;
@@ -1044,9 +1060,12 @@ function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
             
             if (!empty($custom_fields)) {
                 foreach ($custom_fields as $custom_field) {
-                    $gt_meta_fields[] = $custom_field;
-                    $custom_field_san = preg_replace("/[^a-zA-Z0-9]+/", "", $custom_field);
-                    $data[$custom_field_san] = trim(get_post_meta($post_id, $custom_field, true));
+                    $custom_field_name = !empty($custom_field) ? preg_replace('/[^a-zA-Z0-9_]/', '', $custom_field) : '';
+                    
+                    if (!empty($custom_field) && !empty($custom_field_name)) {
+                        $gt_meta_fields[] = $custom_field;
+                        $data[$custom_field_name] = trim(get_post_meta($post_id, $custom_field, true));
+                    }
                 }
             }
 
@@ -1519,6 +1538,11 @@ function geodir_gt2gd_convert_custom_fields( $gd_post_type ) {
                     $custom_field->option_values = implode(",", array_map('trim', $temp_option_values));
                 }
             }
+            
+            $htmlvar_name = !empty($custom_field->htmlvar_name) ? preg_replace('/[^a-zA-Z0-9_]/', '', $custom_field->htmlvar_name) : '';
+            if (empty($htmlvar_name)) {
+                continue;
+            }
 
             $save_field = array();
             $save_field['post_type'] = $gd_post_type;
@@ -1527,7 +1551,7 @@ function geodir_gt2gd_convert_custom_fields( $gd_post_type ) {
             $save_field['admin_title'] = $custom_field->admin_title;
             $save_field['admin_desc'] = $custom_field->admin_desc;
             $save_field['site_title'] = $custom_field->site_title;
-            $save_field['htmlvar_name'] = preg_replace("/[^a-zA-Z0-9]+/", "", $custom_field->htmlvar_name);//sanaise htmlvar_name
+            $save_field['htmlvar_name'] = $htmlvar_name;
             $save_field['default_value'] = trim( $custom_field->default_value, ' ' );
             $save_field['sort_order'] = $custom_field->sort_order;
             $save_field['option_values'] = $custom_field->option_values;
