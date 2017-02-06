@@ -54,7 +54,7 @@ require_once( GT2GD_PLUGIN_DIR . '/includes/geodir_gt2gd_functions.php' );
  */
 require_once( GT2GD_PLUGIN_DIR . '/includes/geodir_gt2gd_actions.php' );
 
-if ( is_admin() ) {
+if ( is_admin() || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
     register_activation_hook( __FILE__ , 'geodir_gt2gd_activation' );
     register_deactivation_hook( __FILE__ , 'geodir_gt2gd_deactivation' );
     register_uninstall_hook( __FILE__, 'geodir_gt2gd_uninstall' );
