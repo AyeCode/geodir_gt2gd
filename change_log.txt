@@ -2,6 +2,7 @@ v1.0.2
 Convert listings in batch using ajax to fix timeout issue when converting large number of listings - FIXED
 Empty custom field names breaks the GeoTheme to GeoDirectory conversion process - FIXED
 Fix issue for plugin installation via WP-CLI - FIXED
+Integrate new structure custom fields & compatibility changes for WP v4.5.0 - FIXED
 
 v1.0.1
 Link business to event saving to wrong DB column - FIXED
