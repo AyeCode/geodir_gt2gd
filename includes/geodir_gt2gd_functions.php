@@ -1016,6 +1016,7 @@ function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
                 $data['is_recurring'] = $recurring_data['is_recurring'];
                 $data['recurring_dates'] = $recurring_dates;
                 $data['event_reg_desc'] = !empty($row['reg_desc']) ? trim($row['reg_desc']) : get_post_meta($post_id, 'reg_desc', true);
+                $data['event_reg_fees'] = !empty($row['reg_fees']) ? trim($row['reg_fees']) : get_post_meta($post_id, 'reg_fees', true);
                 $data['geodir_link_business'] = isset( $row['a_businesses'] ) ? $row['a_businesses']  :'';
             }
             $data['submit_time'] = strtotime( $row['post_date'] );
@@ -1068,7 +1069,18 @@ function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
                     if (!empty($custom_field) && !empty($custom_field_name)) {
                         $gt_meta_fields[] = $custom_field;
                         $custom_field_name = 0 !== strpos($custom_field_name, 'geodir_') ? 'geodir_' . $custom_field_name : $custom_field_name;
-                        $data[$custom_field_name] = trim(get_post_meta($post_id, $custom_field, true));
+                        $custom_field_value = get_post_meta($post_id, $custom_field, true);
+
+                        if (is_array($custom_field_value)) {
+                            if (!empty($custom_field_value)) {
+                                $custom_field_value = array_values($custom_field_value);
+                                $custom_field_value = implode(',', array_map('trim', $custom_field_value));
+                            } else {
+                                $custom_field_value = '';
+                            }
+                        }
+                        
+                        $data[$custom_field_name] = $custom_field_value ? trim($custom_field_value) : $custom_field_value;
                     }
                 }
             }
@@ -1583,7 +1595,7 @@ function geodir_gt2gd_convert_custom_fields( $gd_post_type ) {
             
             $show_in = array();
             if ($custom_field->show_on_detail) {
-                $show_in[] = '[detail]';
+                $show_in[] = '[moreinfo]';
             }
             if ($custom_field->show_on_listing) {
                 $show_in[] = '[listing]';
