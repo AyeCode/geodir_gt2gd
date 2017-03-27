@@ -488,6 +488,8 @@ function geodir_gt2gd_convert_item( $item, $item_data = array() ) {
             }
             
             if (!$batch > 0) {
+                delete_option('geodir_changes_in_custom_fields_table');
+                
                 $return = true;
             }
         }
@@ -545,7 +547,7 @@ function geodir_get_gt_location_info($city_id) {
             $return = array();
             $return['location_id'] = $row['city_id'];
             $return['city'] = $row['city'];
-            $return['city_slug'] = $row['city_slug'];
+            $return['city_slug'] = sanitize_title($row['city_slug']);
             $return['city_latitude'] = $row['lat'];
             $return['city_longitude'] = $row['lng'];
             $return['is_default'] = (int)$row['is_default'];
@@ -588,7 +590,7 @@ function geodir_gt2gd_convert_locations() {
             $save_location = array();
             $save_location['location_id'] = $row['city_id'];
             $save_location['city'] = $row['city'];
-            $save_location['city_slug'] = $row['city_slug'];
+            $save_location['city_slug'] = sanitize_title($row['city_slug']);
             $save_location['city_latitude'] = $row['lat'];
             $save_location['city_longitude'] = $row['lng'];
             if ( !$default_location_id > 0 ) {
@@ -1002,7 +1004,8 @@ function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
             $data['package_id'] = $is_payment_active  ? ( isset( $row['package_pid'] ) && $row['package_pid'] !== '' ? $row['package_pid'] : get_post_meta($post_id, 'package_pid', true) ) : 0;
             $data['alive_days'] = get_post_meta($post_id, 'alive_days', true);
             $data['paymentmethod'] = get_post_meta($post_id, 'paymentmethod', true);
-            $data['expire_date'] = get_post_meta( $post_id, 'expire_date', true );
+            $expire_date = get_post_meta( $post_id, 'expire_date', true );
+            $data['expire_date'] = !empty($expire_date) ? $expire_date : 'Never';
             if ($gt_post_type == 'event') {
                 $recurring_data = geodir_gt2gd_gt_event_data($row);
                 
@@ -1013,6 +1016,7 @@ function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
                 $data['is_recurring'] = $recurring_data['is_recurring'];
                 $data['recurring_dates'] = $recurring_dates;
                 $data['event_reg_desc'] = !empty($row['reg_desc']) ? trim($row['reg_desc']) : get_post_meta($post_id, 'reg_desc', true);
+                $data['event_reg_fees'] = !empty($row['reg_fees']) ? trim($row['reg_fees']) : get_post_meta($post_id, 'reg_fees', true);
                 $data['geodir_link_business'] = isset( $row['a_businesses'] ) ? $row['a_businesses']  :'';
             }
             $data['submit_time'] = strtotime( $row['post_date'] );
@@ -1064,7 +1068,19 @@ function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
                     
                     if (!empty($custom_field) && !empty($custom_field_name)) {
                         $gt_meta_fields[] = $custom_field;
-                        $data[$custom_field_name] = trim(get_post_meta($post_id, $custom_field, true));
+                        $custom_field_name = 0 !== strpos($custom_field_name, 'geodir_') ? 'geodir_' . $custom_field_name : $custom_field_name;
+                        $custom_field_value = get_post_meta($post_id, $custom_field, true);
+
+                        if (is_array($custom_field_value)) {
+                            if (!empty($custom_field_value)) {
+                                $custom_field_value = array_values($custom_field_value);
+                                $custom_field_value = implode(',', array_map('trim', $custom_field_value));
+                            } else {
+                                $custom_field_value = '';
+                            }
+                        }
+                        
+                        $data[$custom_field_name] = $custom_field_value ? trim($custom_field_value) : $custom_field_value;
                     }
                 }
             }
@@ -1405,14 +1421,14 @@ function geodir_gt2gd_gt_region_country( $post_city_id ) {
     $row = $wpdb->get_row( $sql, ARRAY_A );
 
     $return['region'] = !empty($row['region']) ? $row['region'] : '';
-    $return['region_slug'] = !empty($row['region_slug']) ? $row['region_slug'] : '';
+    $return['region_slug'] = !empty($row['region_slug']) ? sanitize_title($row['region_slug']) : '';
 
     // country
     $sql = "SELECT countryname as country, country_slug FROM " . $wpdb->prefix . "multicountry WHERE FIND_IN_SET( '" . $post_city_id . "', cities ) ORDER BY sortorder ASC, is_default DESC";
     $row = $wpdb->get_row( $sql, ARRAY_A );
 
     $return['country'] = !empty($row['country']) ? $row['country'] : '';
-    $return['country_slug'] = !empty($row['country_slug']) ? $row['country_slug'] : '';
+    $return['country_slug'] = !empty($row['country_slug']) ? sanitize_title($row['country_slug']) : '';
 
     return $return;
 }
@@ -1507,16 +1523,27 @@ function geodir_gt2gd_is_active( $plugin ) {
  * @return array Converted custom fields names.
  */
 function geodir_gt2gd_convert_custom_fields( $gd_post_type ) {
-    global $wpdb;
-
+    global $wpdb, $wp_version;
+    
     // places custom fields
     $custom_fields = geodir_gt2gd_gt_custom_fields( $gd_post_type );
 
     $return_fields = array();
     if ( !empty( $custom_fields ) ) {
         remove_all_filters( 'get_terms' );
-        $gd_place_terms = (array)get_terms( $gd_post_type . 'category', array( 'hide_empty' => 0, 'orderby' => 'id', 'fields' => 'ids' ) );
+        $term_args = array( 'hide_empty' => 0, 'orderby' => 'id', 'fields' => 'ids' );
 
+        if ( version_compare( $wp_version, '4.5.0', '<' ) ) {
+            $gd_place_terms = get_terms( $gd_post_type . 'category', $term_args );
+        } else {
+            $term_args['taxonomy'] = $gd_post_type . 'category';
+            $gd_place_terms = get_terms( $term_args );
+        }
+
+        if ( is_wp_error( $gd_place_terms ) ) {
+            $gd_place_terms = array();
+        }
+        
         foreach ( $custom_fields as $custom_field ) {
             $gt_field_type = $custom_field->ctype;
             
@@ -1543,6 +1570,8 @@ function geodir_gt2gd_convert_custom_fields( $gd_post_type ) {
             if (empty($htmlvar_name)) {
                 continue;
             }
+            
+            $htmlvar_name = 0 !== strpos($htmlvar_name, 'geodir_') ? 'geodir_' . $htmlvar_name : $htmlvar_name;
 
             $save_field = array();
             $save_field['post_type'] = $gd_post_type;
@@ -1559,10 +1588,20 @@ function geodir_gt2gd_convert_custom_fields( $gd_post_type ) {
             $save_field['is_active'] = $custom_field->is_active;
             $save_field['show_on_listing'] = $custom_field->show_on_listing;
             $save_field['show_on_detail'] = $custom_field->show_on_detail;
-            $save_field['is_default'] = $custom_field->show_on_detail; // show in sidebar
+            $save_field['is_default'] = 0; // show in sidebar
             $save_field['packages'] = $custom_field->extrafield1;
             $save_field['cat_sort'] = implode(',', $cat_sort);
             $save_field['cat_filter'] = implode(',', $cat_filter);
+            
+            $show_in = array();
+            if ($custom_field->show_on_detail) {
+                $show_in[] = '[moreinfo]';
+            }
+            if ($custom_field->show_on_listing) {
+                $show_in[] = '[listing]';
+            }
+            $save_field['show_in'] = !empty($show_in) ? implode(',', $show_in) : '';
+            $save_field['field_type_key'] = $gt_field_type;
             
             $sql = "SELECT id FROM " . $wpdb->prefix . "geodir_custom_fields WHERE htmlvar_name = '". $save_field['htmlvar_name'] ."' AND post_type = '". $save_field['post_type'] . "'";
             $exists_field = $wpdb->get_var( $sql );
@@ -1576,7 +1615,10 @@ function geodir_gt2gd_convert_custom_fields( $gd_post_type ) {
             switch ( $gt_field_type ) {
                 case 'checkbox':
                     $field_data_type = "TINYINT( 1 ) NOT NULL";
-                    if(isset($save_field['default_value']) && strlen($save_field['default_value'])>1){$save_field['default_value'] = 0;}
+                    
+                    if (isset($save_field['default_value']) && strlen($save_field['default_value']) > 1) {
+                        $save_field['default_value'] = 0;
+                    }
                 break;
                 case 'multiselect':
                     $field_data_type = "VARCHAR( 500 ) NULL";
@@ -1590,10 +1632,10 @@ function geodir_gt2gd_convert_custom_fields( $gd_post_type ) {
             }
             
             if ( $field_data_type ) {
-                if ($save_field['default_value'] != '') {
+                if ($save_field['default_value'] !== '') {
                     $field_data_type .= " DEFAULT '" . $save_field['default_value'] . "'";
                 }
-                
+
                 geodir_add_column_if_not_exist( $wpdb->prefix . 'geodir_' . $save_field['post_type'] . '_detail', $save_field['htmlvar_name'], $field_data_type );
             }
             
@@ -1617,29 +1659,12 @@ function geodir_gt2gd_convert_custom_fields( $gd_post_type ) {
 function geodir_gt2gd_gt_custom_fields( $post_type ) {
     global $wpdb;
         
-    remove_all_filters( 'get_terms' );
-    $terms = get_terms( $post_type . 'category', array( 'hide_empty' => 0, 'orderby' => 'id', 'fields' => 'ids' ) );
-
-    if ( !( !empty( $terms ) && is_array( $terms ) ) ) {
-        return NULL;
-    }
-
-    $where = array();
-    foreach ( $terms as $term_id ) {
-        $where[] = "FIND_IN_SET( '" . $term_id . "', cat_filter )";
-    }
-
-    $where = "WHERE ( " . implode( " OR ", $where ) . " ) ";
-
-    // this seems wrong to filter here, we should grab all
-    $where = " ";
-     
     $table = $wpdb->prefix . 'geotheme_custom_post_fields';
 
     $rows = array();
 
-    if ( $wpdb->get_var( "SHOW TABLES LIKE '" . $table . "'" ) == $table ) {
-        $sql = "SELECT * FROM " . $table . " " . $where ." ORDER BY sort_order ASC";
+    if ( $wpdb->get_var( "SHOW TABLES LIKE '" . $table . "'" ) ) {
+        $sql = "SELECT * FROM " . $table . " ORDER BY sort_order ASC";
         $rows = $wpdb->get_results( $sql );
     }
 
