@@ -4,6 +4,7 @@ Empty custom field names breaks the GeoTheme to GeoDirectory conversion process 
 Fix issue for plugin installation via WP-CLI - FIXED
 Integrate new structure custom fields & compatibility changes for WP v4.5.0 - FIXED
 Serialized values not converted correctly - FIXED
+Neighbourhoods conversion added - CHANGED
 
 v1.0.1
 Link business to event saving to wrong DB column - FIXED
