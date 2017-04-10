@@ -507,7 +507,7 @@ function geodir_gt2gd_convert_item( $item, $item_data = array() ) {
         }
         break;
     }
-    
+
     if ($batch > 0) {
         $status['status'] = 'batch';
         $status['status_txt'] = __( 'Converting...', 'geodir_gt2gd' );
@@ -573,16 +573,17 @@ function geodir_get_gt_location_info($city_id) {
  * @return bool Conversion status.
  */
 function geodir_gt2gd_convert_locations() {
-    global $wpdb;
+    global $wpdb, $gt2gd_country_slugs;
 
     $gd_default_location = (array)geodir_get_default_location();
+    $gt2gd_country_slugs = array();
 
     // cities
     $sql = "SELECT *, cityname as city FROM " . $wpdb->prefix . "multicity WHERE cityname NOT LIKE 'EVERYWHERE' ORDER BY sortorder ASC, is_default DESC";
     $rows = $wpdb->get_results( $sql, ARRAY_A );
 
     $default_location_id = (int)$wpdb->get_var( "SELECT location_id FROM " . POST_LOCATION_TABLE . " WHERE is_default = '1'" );
-
+    
     if ( !empty( $rows ) ) {
         foreach ( $rows as $row ) {
             $gt_region_country = geodir_gt2gd_gt_region_country( $row['city_id'] );
@@ -603,6 +604,16 @@ function geodir_gt2gd_convert_locations() {
             $save_location['region_slug'] = !empty( $gt_region_country['region'] ) ? $gt_region_country['region_slug'] : $gd_default_location['region_slug'];
             $save_location['country'] = !empty( $gt_region_country['country'] ) ? $gt_region_country['country'] : $gd_default_location['country'];
             $save_location['country_slug'] = !empty( $gt_region_country['country'] ) ? $gt_region_country['country_slug'] : $gd_default_location['country_slug'];
+            
+            if (!empty($gt2gd_country_slugs[$save_location['country']])) {
+                $save_location['country_slug'] = $gt2gd_country_slugs[$save_location['country']];
+            } else if ($gd_default_location['country'] == $save_location['country']) {
+                $save_location['country_slug'] = $gd_default_location['country_slug'];
+            } else if ($country_slug = $wpdb->get_var($wpdb->prepare("SELECT country_slug FROM " . POST_LOCATION_TABLE . " WHERE country LIKE %s ORDER BY is_default DESC LIMIT 1", array($save_location['country'])))) {
+                $save_location['country_slug'] = $country_slug;
+            }
+            
+            $gt2gd_country_slugs[$save_location['country']] = $save_location['country_slug'];
             
             $exists = geodir_get_location_by_id( array(), $row['city_id'] );
             
@@ -640,6 +651,37 @@ function geodir_gt2gd_convert_locations() {
             geodir_location_set_default( $default_location_id );
         }
     }
+    
+    // neighbourhoods
+    $sql = "SELECT * FROM " . $wpdb->prefix . "multihood ORDER BY hood_id ASC, is_default DESC";
+    $rows = $wpdb->get_results( $sql );
+    
+    if ( !empty( $rows ) ) {
+        foreach ( $rows as $row ) {
+            $exists = geodir_location_get_neighbourhood_by_id( $row->hood_id );
+            
+            $cities = !empty($row->cities) ? explode( ',', $row->cities ) : array();
+            $hood_location_id = !empty( $cities[0] ) ? $cities[0] : 0;
+            
+            $save_data = array();
+            $save_data['hood_id'] = $row->hood_id;
+            $save_data['hood_location_id'] = $hood_location_id;
+            $save_data['hood_name'] = $row->hoodname;
+            $save_data['hood_latitude'] = $row->lat;
+            $save_data['hood_longitude'] = $row->lng;
+            $save_data['hood_slug'] = $row->hood_slug;
+            $save_data['hood_meta_title'] = $row->hoodname;
+            $save_data['hood_meta'] = $row->meta_desc;
+            $save_data['hood_description'] = $row->home_desc;
+            
+            if ( !empty( $exists ) ) {
+                $wpdb->update( POST_NEIGHBOURHOOD_TABLE, $save_data, array( 'hood_id' => $row['hood_id'] ) );
+            } else {
+                $wpdb->insert( POST_NEIGHBOURHOOD_TABLE, $save_data );
+            }
+        }
+    }
+    
     return true;
 }
 
@@ -706,7 +748,7 @@ function geodir_gt2gd_convert_prices() {
             $price['sub_units_num'] = $row['sub_units_num'];
             $price['google_analytics'] = $row['google_analytics'];
             
-            $package_info = geodir_get_package_info_by_id( $price['pid'] );
+            $package_info = geodir_get_package_info_by_id( $price['pid'], '' );
             
             if ( !empty( $package_info ) ) {
                 $wpdb->update( $wpdb->prefix . 'geodir_price', $price, array( 'pid' => $package_info->pid ) );
@@ -983,6 +1025,11 @@ function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
                 $post_location_id = $gd_default_location['location_id'];
             }
             
+            if (empty($row['geo_latitude']) || empty($row['geo_longitude'])) {
+                $row['geo_latitude'] = !empty($location_info['lat']) ? $location_info['lat'] : (!empty($location_info['city_latitude']) ? $location_info['city_latitude'] : $row['geo_latitude']);
+                $row['geo_longitude'] = !empty($location_info['lng']) ? $location_info['lng'] : (!empty($location_info['city_longitude']) ? $location_info['city_longitude'] : $row['geo_longitude']);
+            }
+            
             $post_city = $location_info['city'];
             $post_region = $location_info['region'];
             $post_country = $location_info['country'];
@@ -1042,7 +1089,11 @@ function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
             $data['geodir_video'] = !empty($row['video']) ? trim($row['video']) : get_post_meta($post_id, 'video', true);
             $data['geodir_special_offers'] = !empty($row['proprty_feature']) ? trim($row['proprty_feature']) : get_post_meta($post_id, 'proprty_feature', true);
             if ($is_location_active) {
-                $data['post_neighbourhood'] = !empty($row['post_hood_id']) ? trim($row['post_hood_id']) : get_post_meta($post_id, 'post_hood_id', true);
+                $post_hood_id = !empty($row['post_hood_id']) ? trim($row['post_hood_id']) : get_post_meta($post_id, 'post_hood_id', true);
+                
+                if ( !empty( $post_hood_id ) && ( $neighbourhood = geodir_location_get_neighbourhood_by_id( (int)$post_hood_id ) ) ) {
+                    $data['post_neighbourhood'] = !empty( $neighbourhood->hood_slug ) ? $neighbourhood->hood_slug : '';
+                }
             }
             
             $sql = "SELECT COUNT(r.rating_id) AS reviews, AVG(r.rating_rating) AS rating FROM " . $wpdb->prefix . "ratings AS r INNER JOIN " . $wpdb->prefix . "comments AS c ON r.comment_id = c.comment_ID WHERE c.comment_parent = 0 AND r.rating_rating > 0 AND rating_postid = " . (int)$post_id;
