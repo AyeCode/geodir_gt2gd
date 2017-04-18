@@ -986,7 +986,7 @@ function geodir_gt2gd_convert_batch_listings($gt_post_type, $limit = 100) {
             
             $marker_json = '';
             if ( $default_category > 0 ) {
-                $term_icon_url = get_tax_meta($default_category, 'ct_cat_icon', false, $gd_post_type);
+                $term_icon_url = geodir_get_tax_meta($default_category, 'ct_cat_icon', false, $gd_post_type);
                 $term_icon = (isset($term_icon_url['src']) && $term_icon_url['src'] != '') ? $term_icon_url['src'] : $default_marker_icon;
                 
                 $marker_json = '{';
